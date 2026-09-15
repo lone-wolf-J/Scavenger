@@ -1,0 +1,67 @@
+{
+  "content-marketing": {
+    "targetRoles": ["Content Marketing Specialist", "AEO & SEO Content Strategist", "B2B Content Marketing Manager"],
+    "currentRoles": ["Content Marketing Specialist"],
+    "seniority": "senior",
+    "skills": ["SEO", "Answer Engine Optimization", "conversion copywriting", "content strategy", "B2B marketing"],
+    "technologies": ["HubSpot", "Salesforce", "Google Analytics", "Ahrefs"],
+    "domains": ["B2B tech", "healthtech"],
+    "industries": ["technology", "healthcare"],
+    "functionalAreas": ["marketing", "content"],
+    "leadershipSignals": ["strategy", "roadmap", "stakeholder"],
+    "yearsExperience": 5,
+    "workplacePrefs": ["remote"],
+    "employmentPrefs": ["full-time"],
+    "compensationPrefs": { "min": 80000, "currency": "USD" },
+    "exclusions": ["intern", "junior"]
+  },
+  "ai-leadership": {
+    "targetRoles": ["Head of Applied AI", "Director of AI Solutions", "Forward Deployed AI Engineer", "AI Solutions Architect"],
+    "currentRoles": ["Staff AI Engineer"],
+    "seniority": "director",
+    "skills": ["LLM systems", "AI platform architecture", "enterprise AI transformation", "technical pre-sales"],
+    "technologies": ["Python", "transformers", "AWS", "Kubernetes"],
+    "domains": ["enterprise AI", "AI consulting"],
+    "industries": ["technology", "financial services"],
+    "functionalAreas": ["engineering", "solutions architecture", "customer engineering"],
+    "leadershipSignals": ["team leadership", "people management", "strategy", "P&L", "stakeholder"],
+    "yearsExperience": 12,
+    "workplacePrefs": ["remote", "hybrid"],
+    "employmentPrefs": ["full-time"],
+    "compensationPrefs": { "min": 200000, "currency": "USD" },
+    "exclusions": ["intern", "junior", "entry"]
+  },
+  "hr-director": {
+    "targetRoles": ["HR Director", "Director of Talent Acquisition", "Head of People"],
+    "currentRoles": ["Senior HR Manager"],
+    "seniority": "director",
+    "skills": ["talent acquisition", "HR leadership", "succession planning", "employee relations"],
+    "technologies": ["Workday", "Greenhouse", "Lattice"],
+    "domains": ["people operations"],
+    "industries": ["healthcare", "technology"],
+    "functionalAreas": ["human resources", "talent acquisition"],
+    "leadershipSignals": ["team leadership", "people management", "strategy"],
+    "yearsExperience": 9,
+    "workplacePrefs": ["hybrid"],
+    "employmentPrefs": ["full-time"],
+    "compensationPrefs": { "min": 150000, "currency": "USD" },
+    "exclusions": ["intern", "junior", "sales"]
+  },
+  "senior-swe": {
+    "targetRoles": ["Senior Software Engineer", "Backend Engineer", "Staff Software Engineer"],
+    "currentRoles": ["Software Engineer"],
+    "seniority": "senior",
+    "skills": ["distributed systems", "API design", "code review", "mentoring"],
+    "technologies": ["Python", "Go", "PostgreSQL", "AWS"],
+    "domains": ["backend infrastructure"],
+    "industries": ["technology"],
+    "functionalAreas": ["engineering"],
+    "leadershipSignals": ["mentoring", "tech lead"],
+    "yearsExperience": 7,
+    "workplacePrefs": ["remote"],
+    "employmentPrefs": ["full-time"],
+    "compensationPrefs": { "min": 170000, "currency": "USD" },
+    "exclusions": ["intern", "junior", "qa tester", "help desk"]
+  }
+}
+

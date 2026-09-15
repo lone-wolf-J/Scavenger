@@ -37,6 +37,14 @@ export default {
   board-wide feeds.
 - `fetch(entry, ctx)` (required) — resolve the source and return an array of
   `Job` objects.
+- `normalize(raw, source)` (optional) — map one raw listing to the `Job`
+  shape yourself; when absent the scanner applies the shared
+  `normalizeJob()` from `lib/job-model.mjs`. The scanner never cares whether
+  listings came from HTML, a JSON API, an ATS endpoint, or an MCP server —
+  every transport converges here.
+- `health()` (optional) — async self-check returning
+  `{ status, latencyMs?, message? }`. The scan envelope classifies fetch
+  errors independently, so this is advisory only.
 
 ### Job shape (see `_types.js` for the full typedef)
 

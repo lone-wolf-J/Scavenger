@@ -1,0 +1,52 @@
+# Provider catalog — how each US job source is acquired.
+# Reference for portals.yml `job_boards:` entries. `mechanism` is the best
+# legitimate acquisition path found; `status` is what the scan reports when
+# the mechanism is unavailable. Respect robots.txt, rate limits, and terms.
+#
+# Transports: html (public search page) | api (official/public structured
+# endpoint) | ats (company career-site API) | mcp (official MCP server via
+# an MCP-capable runner; plain `node scan.mjs` reports UNAVAILABLE) |
+# unsupported (no legitimate endpoint — adapter reports UNSUPPORTED).
+
+providers:
+  - id: dice
+    mechanism: html
+    search_url: "https://www.dice.com/jobs?q={query}&location={location}"
+    notes: "Public search results; paginate conservatively."
+  - id: linkedin
+    mechanism: html
+    search_url: "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords={query}&location={location}"
+    notes: "Zero-auth guest endpoint; 1s pacing between pages; max 10 pages."
+  - id: indeed
+    mechanism: html
+    search_url: "https://www.indeed.com/jobs?q={query}&l={location}"
+    notes: "No public API (partner-gated). Aggressively bot-guarded — BLOCKED is an honest outcome."
+  - id: careerbuilder
+    mechanism: html
+    search_url: "https://www.careerbuilder.com/jobs?keywords={query}&location={location}"
+    notes: "No public API; server-rendered search page."
+  - id: monster
+    mechanism: html
+    search_url: "https://www.monster.com/jobs/search?q={query}&where={location}"
+    notes: "No public API; server-rendered search page."
+  - id: ziprecruiter
+    mechanism: html
+    search_url: "https://www.ziprecruiter.com/candidate/search?search={query}&location={location}"
+    notes: "Partner API is gated; heavy JS + bot checks — BLOCKED is common. Official MCP server is the better path where available."
+    mcp: { server: "ziprecruiter", tool: "search_jobs" }
+  - id: techfetch
+    mechanism: html
+    search_url: "https://www.techfetch.com/job-search?search={query}&location={location}"
+    notes: "US tech-contract board; staffing-driven listings triaged by discovery (review, not auto-add)."
+  - id: benchinfo
+    mechanism: unsupported
+    status: UNSUPPORTED
+    notes: "H-1B salary-data site; no public job-search page, feed, or API. Adapter reports UNSUPPORTED, never fake jobs."
+
+# MCP-first where it materially improves reliability. A portals entry opts in with:
+#   provider: dice
+#   transport: mcp
+#   mcp: { server: dice, tool: search_jobs, args: { query: "...", location: "United States" } }
+# Plain node scan reports UNAVAILABLE for mcp entries; an MCP-capable runner
+# (Claude Code / OpenCode with the board's MCP server) executes the tool call
+# and normalizes listings through lib/job-model.mjs.

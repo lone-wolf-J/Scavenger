@@ -115,10 +115,17 @@
  * The provider contract — the default export of every providers/*.mjs file
  * (excluding _-prefixed shared helpers).
  *
+ * Transport-agnostic by design: the scanner calls fetch() and normalizes
+ * through normalizeProviderJob(), so it never cares whether listings came
+ * from HTML, a JSON API, an ATS endpoint, or an MCP server. Optional hooks
+ * let a provider customize without forking the core:
+ *
  * @typedef {object} Provider
  * @property {string} id                                                       Unique across all loaded providers.
  * @property {((entry: PortalEntry) => (DetectHit | null))} [detect]           Optional auto-detection.
  * @property {(entry: PortalEntry, ctx: Context) => Promise<Job[]>} fetch      Required.
+ * @property {((raw: object, source: string) => Job)} [normalize]              Optional raw→Job mapping; falls back to normalizeJob().
+ * @property {(() => Promise<{status: string, latencyMs?: number, message?: string}>)} [health]  Optional self-check; the scan envelope classifies errors anyway.
  */
 
 export {};

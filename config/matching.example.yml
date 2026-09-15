@@ -1,0 +1,31 @@
+# Matching engine tuning — copy to matching.yml to activate.
+# Read by scan.mjs (loadMatchingWeights / loadSignalWeights) and applied to
+# lib/match-score.mjs (domain-neutral Career Profile scoring).
+# Only the keys below are honored; anything else is ignored.
+# Omit the file entirely to use scorer defaults (weights sum = 100).
+
+weights:
+  title: 25          # title fit vs profile target/current roles
+  seniority: 12      # seniority fit vs profile seniority
+  skills: 18         # profile skills + technologies in title/desc
+  functional: 10     # functional areas + domains + industries
+  experience: 5      # years-of-experience vs title scope
+  company: 6         # employer identification + evidence
+  compensation: 7    # pay vs compensation prefs
+  location: 10       # location/workplace fit
+  employment: 4      # employment-type fit
+  leadership: 3      # leadership-signal fit
+
+# Provider ROI signal weights (obj 9). Signal quality, not raw volume:
+# signal = accepted*w + uniqueEmployers*w + highMatch(>=75)*w + fresh*w.
+signal_weights:
+  accepted: 3
+  uniqueEmployers: 2
+  highMatch: 4
+  fresh: 1
+
+# Exclusion vetoes live in the Career Profile (`exclusions:`), not here:
+# any title containing an exclusion term — or a junior marker against a
+# mid-level+ profile — is capped at 20/100 with the reason recorded.
+# (Kept out of this file deliberately — exclusions are personal targeting
+# and belong in config/profile.yml, never in shared architecture.)

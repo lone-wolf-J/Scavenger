@@ -1,0 +1,21 @@
+# Location rules — US-only opportunity filter reference.
+# Enforced by lib/us-location.mjs (classifyUsLocation) and scan.mjs
+# `location_filter: { mode: us_only }`. This file documents the rule so
+# portals.yml stays small; do not weaken it.
+#
+# ACCEPT (verdict: us):
+#   - US cities / states / postal codes: "Austin, TX", "Seattle, Washington"
+#   - Country markers: "United States", "USA", "US"
+#   - US-qualified remote: "Remote - US", "Remote - United States",
+#     "Remote in Texas", "US Remote"
+#
+# REJECT (verdict: non-us):
+#   - Any non-US country: Canada, India, UK, Germany, France, Australia, ...
+#   - Bare scope words: "Remote" (no US evidence), "worldwide", "global",
+#     "Remote - Worldwide", "Remote - North America" (unless the posting
+#     explicitly establishes US eligibility)
+#
+# REJECT (verdict: unknown -> rejected in strict mode):
+#   - Empty / unparseable location (unknown is not US evidence)
+mode: us_only
+strict_unknown: reject

@@ -1,0 +1,38 @@
+# Search profiles — reference schema for profile-derived query families.
+#
+# CareerOps does NOT maintain a permanent hardcoded list of careers. Search
+# families are GENERATED from the user's Career Profile at runtime by
+# lib/search-generation.mjs (targetRoles → families clustered by head noun,
+# skills/technologies → boosters, exclusions + seniority → negatives).
+#
+# This file documents the generated shape so portals.yml authors and
+# debugging humans can read a family. The examples below are TEST PROFILES
+# only (any profession works — HR, SWE, PM, finance, legal, ...).
+
+profile:
+  name: example-generated-shape
+  locations:
+    country: US
+
+  # One entry per generated family, in profile order (first = primary).
+  families:
+    - name: specialist            # head noun cluster
+      positives:                  # profile targetRoles in this family
+        - "Content Marketing Specialist"
+      negatives:                  # profile exclusions + junior markers (mid+ profiles)
+        - "intern"
+        - "junior"
+      boosters:                   # profile skills/technologies (top 8)
+        - "SEO"
+      seniority: senior
+      weight: 1.0                 # decays for later families
+
+  # A second test profile generates a different shape from different input:
+  # - name: director
+  #   positives:
+  #     - "HR Director"
+  #     - "Director of Talent Acquisition"
+  #   negatives: ["intern", "junior", "sales"]
+  #   boosters: ["Workday", "talent acquisition"]
+  #   seniority: director
+  #   weight: 1.0
