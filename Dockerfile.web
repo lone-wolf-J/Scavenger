@@ -18,8 +18,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
-RUN npm ci --ignore-scripts --no-audit --no-fund \
+COPY package.json ./
+# NOTE: `npm install` (not `ci`) — the root package-lock.json is gitignored
+# upstream on purpose, so no lockfile reaches the build context. Root deps
+# (dotenv/js-yaml/playwright lib) are stable; the web/ install below still
+# uses ci + lockfile for determinism where it counts.
+RUN npm install --ignore-scripts --no-audit --no-fund \
   --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 
 COPY web/package.json web/package-lock.json* ./web/
