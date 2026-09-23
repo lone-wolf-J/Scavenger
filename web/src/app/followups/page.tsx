@@ -1,12 +1,11 @@
-import { Suspense } from "react";
-import { FollowupsView } from "@/components/followups/followups-view";
+import { FollowupReminders } from "@/components/followups/followup-reminders";
 
-export const dynamic = "force-dynamic"; // cadence is computed fresh per request
+export const dynamic = "force-dynamic";
 
 export default function FollowupsPage() {
   return (
-    <Suspense>
-      <FollowupsView />
-    </Suspense>
+    <div className="mx-auto max-w-4xl px-6 py-10">
+      <FollowupReminders />
+    </div>
   );
 }

@@ -7,7 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Upload, FileText, Loader2, Check, AlertTriangle, Lock, ArrowRight, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { instrumentSerif } from "@/lib/fonts";
+import { inter } from "@/lib/fonts";
 import { cvReadiness, parseCvStream, type CvSeed } from "@/lib/cv/quality";
 import { DEFAULT_FILTERS, filtersToParams } from "@/lib/explore";
 
@@ -251,7 +251,7 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
         <style>{STYLE}</style>
         <div className="flex items-center gap-2.5">
           <Loader2 className="size-4 animate-spin text-brand" />
-          <span className={`${instrumentSerif.className} text-lg text-foreground`}>{trace || "Reading your CV…"}</span>
+          <span className={`${inter.className} text-lg text-foreground`}>{trace || "Reading your CV…"}</span>
         </div>
         <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
           <span className="size-1.5 rounded-full bg-emerald-500" /> 0 tokens · $0.00 · local
@@ -267,7 +267,7 @@ export function CvIngest({ onSaved }: { onSaved?: () => void }) {
       <style>{STYLE}</style>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <FileText className="size-4 text-brand" />
-        <h3 className={`${instrumentSerif.className} text-lg text-foreground`}>Here&apos;s your CV — review and save</h3>
+        <h3 className={`${inter.className} text-lg text-foreground`}>Here&apos;s your CV — review and save</h3>
         {readiness && (
           <span
             className={cn(

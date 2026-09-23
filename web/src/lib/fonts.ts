@@ -1,4 +1,13 @@
-import { Inter, Instrument_Serif } from "next/font/google";
+import { Inconsolata, Inter, Instrument_Serif } from "next/font/google";
+
+// Orchid mono accent — Inconsolata 400/700, the exact pairing
+// orchid.security loads (eyebrows, kickers, code-adjacent labels).
+export const inconsolata = Inconsolata({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-inconsolata",
+  display: "swap",
+});
 
 // Body / UI — Inter, same as the career-ops-docs home (next/font/google,
 // self-hosted: no CLS, GDPR-safe).

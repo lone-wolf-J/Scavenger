@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config({ path: new URL("../.env", import.meta.url) });
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Two lockfiles exist on purpose (repo root + web/), so Next would infer the

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { scoreTone } from "@/lib/format";
@@ -19,7 +19,7 @@ export type Job = {
   steps: JobStep[];
   text: string;
   result?: JobResult;
-  cost?: { tokens: number; usd?: number }; // per-run token cost (Claude result event) — local only
+  cost?: { tokens: number; usd?: number }; // per-run token cost (Claude result event) â€” local only
   startedAt: number;
   endedAt?: number;
 };
@@ -43,7 +43,7 @@ export function useJobs() {
 const JOBS_KEY = "career-ops:jobs";
 
 function parseVerdict(text: string): JobResult {
-  const m = text.match(/VERDICT:\s*([\d.]+)\s*\/\s*5\s*[—:|-]+\s*(.+)/i);
+  const m = text.match(/VERDICT:\s*([\d.]+)\s*\/\s*5\s*[â€”:|-]+\s*(.+)/i);
   if (m) {
     const score = parseFloat(m[1]);
     return { score, summary: m[2].trim().replace(/\s+/g, " ").slice(0, 90), tone: scoreTone(`${score}`) };
@@ -67,7 +67,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem(JOBS_KEY);
       const arr = raw ? JSON.parse(raw) : null;
       if (Array.isArray(arr)) {
-        // anything left "running" from a previous session is stale → mark interrupted
+        // anything left "running" from a previous session is stale â†’ mark interrupted
         setJobs(arr.map((j: Job) => (j.status === "running" ? { ...j, status: "error", steps: [...(j.steps || []), { kind: "status", label: "Interrupted (page reloaded)", ts: Date.now() }] } : j)));
       }
     } catch {
@@ -102,7 +102,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
         kind: opts.kind,
         batchId: opts.batchId,
         status: "running",
-        steps: [{ kind: "status", label: "Starting…", ts: Date.now() }],
+        steps: [{ kind: "status", label: "Startingâ€¦", ts: Date.now() }],
         text: "",
         startedAt: Date.now(),
       };
@@ -110,12 +110,12 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
 
       (async () => {
         const cliId = readSavedCliId() || (await resolveCliId());
-        if (!cliId) {
+        if (!cliId && opts.kind !== "evaluate") {
           patch(id, (j) => ({
             ...j,
             status: "error",
             endedAt: Date.now(),
-            steps: [...j.steps, { kind: "status", label: "No CLI configured — open Config and click Save config", ts: Date.now() }],
+            steps: [...j.steps, { kind: "status", label: "No CLI configured â€” open Config and click Save config", ts: Date.now() }],
           }));
           return;
         }
@@ -142,7 +142,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ id, title: opts.title, subtitle: opts.subtitle, page: opts.page, input: opts.input, result, cost, steps, output: text }),
             }).catch(() => {});
-            // Tell server-snapshot surfaces (Today, pipeline) to refetch — the
+            // Tell server-snapshot surfaces (Today, pipeline) to refetch â€” the
             // worker just wrote a real tracker row / report they don't yet see.
             if (typeof window !== "undefined" && (opts.kind === "evaluate" || opts.kind === "pdf")) {
               window.dispatchEvent(new CustomEvent("co-job-done", { detail: { kind: opts.kind, input: opts.input } }));
@@ -216,3 +216,4 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
 
   return <JobsContext.Provider value={{ jobs, startJob, removeJob, clearFinished }}>{children}</JobsContext.Provider>;
 }
+

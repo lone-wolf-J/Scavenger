@@ -1,4 +1,4 @@
-import { LayoutDashboard, Compass, ListChecks, Send, Radar, BarChart3, FileText, Settings } from "lucide-react";
+import { Home, Briefcase, FileCheck, Users, Settings } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 // Single source of truth for the app's primary destinations — shared by the
@@ -10,15 +10,18 @@ export type NavItem = {
   chip?: string;
 };
 
+// Primary navigation — four items only. Everything else is secondary.
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Today", icon: LayoutDashboard },
-  { href: "/explore", label: "Explore", icon: Compass, chip: "New" },
-  { href: "/pipeline", label: "Pipeline", icon: ListChecks },
-  { href: "/followups", label: "Follow-ups", icon: Send },
-  { href: "/portals", label: "Portals", icon: Radar },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/cv", label: "CV", icon: FileText },
-  { href: "/config", label: "Config", icon: Settings },
+  { href: "/", label: "Home", icon: Home },
+  { href: "/jobs", label: "Jobs", icon: Briefcase },
+  { href: "/applications", label: "Applications", icon: FileCheck },
+  { href: "/profiles", label: "Profiles", icon: Users },
+];
+
+// Secondary navigation — accessible but not in the primary sidebar.
+export const SECONDARY_NAV_ITEMS: NavItem[] = [
+  { href: "/saved", label: "Saved", icon: Settings },
+  { href: "/config", label: "Settings", icon: Settings },
 ];
 
 export function isActivePath(href: string, pathname: string): boolean {

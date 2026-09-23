@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { ApplyBackdrop } from "@/components/apply/apply-backdrop";
-import { instrumentSerif } from "@/lib/fonts";
+import { inter } from "@/lib/fonts";
 import { ATS_LABEL, ATS_SOURCES, type AtsSource } from "@/lib/explore";
 import { useExplore, type SourceState } from "./explore-provider";
 
@@ -85,7 +85,7 @@ export function DiscoveringState() {
         </div>
 
         <div>
-          <div className={`${instrumentSerif.className} co-disc__counter text-foreground`}>{shown}</div>
+          <div className={`${inter.className} co-disc__counter text-foreground`}>{shown}</div>
           <p className="mt-1 text-sm text-muted">
             {phase === "revealing" ? "fresh roles found — free" : matchCount > 0 ? "fresh roles and counting…" : "scanning the network…"}
           </p>

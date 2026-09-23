@@ -126,6 +126,30 @@
  * @property {(entry: PortalEntry, ctx: Context) => Promise<Job[]>} fetch      Required.
  * @property {((raw: object, source: string) => Job)} [normalize]              Optional raw→Job mapping; falls back to normalizeJob().
  * @property {(() => Promise<{status: string, latencyMs?: number, message?: string}>)} [health]  Optional self-check; the scan envelope classifies errors anyway.
+ * @property {(({job: Job, ctx: Context}) => Promise<VerifyResult>)} [verifyJob]
+ *   Optional liveness check for ONE known posting (lib/liveness-engine.mjs).
+ *   Providers without it yield UNKNOWN — never guessed. When present it must
+ *   be cheap (one request) and honest: ACTIVE only for positive existence
+ *   proof, CLOSED only for provider-reported removal, NOT_FOUND when the
+ *   posting is absent (an observation, not a verdict).
+ * @property {{ reliableAbsence?: boolean }} [verify]
+ *   Opt-in declaration: when true, this provider asserts its NOT_FOUND is a
+ *   reliable closure signal (stable ids, no soft-404s). Absent/false means
+ *   NOT_FOUND only informs staleness review. No provider sets this today;
+ *   the default everywhere is conservative.
+ */
+
+/**
+ * Result of a provider verifyJob() liveness check.
+ *
+ * @typedef {object} VerifyResult
+ * @property {string} status   ACTIVE | CLOSED | NOT_FOUND | BLOCKED |
+ *                             UNSUPPORTED | AUTH_REQUIRED | RATE_LIMITED |
+ *                             TEMPORARILY_UNAVAILABLE | ERROR | UNKNOWN
+ *                             (anything else → UNKNOWN).
+ * @property {object} [evidence] Provider-supplied detail (never trusted blindly;
+ *                               CLOSED still passes assertClosedEvidence).
+ * @property {string} [checkedAt] ISO timestamp; defaults to now.
  */
 
 export {};

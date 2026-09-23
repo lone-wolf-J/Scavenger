@@ -122,7 +122,12 @@ export function normalizeMuseJob(j) {
     Array.isArray(j.locations) && j.locations.length > 0 && typeof j.locations[0]?.name === 'string'
       ? j.locations[0].name.trim()
       : '';
-  return { title, url, company, location };
+  let postedAt;
+  if (typeof j.publication_date === 'string') {
+    const parsed = Date.parse(j.publication_date);
+    if (!Number.isNaN(parsed)) postedAt = parsed;
+  }
+  return { title, url, company, location, postedAt, source: 'themuse' };
 }
 
 /** @type {Provider} */

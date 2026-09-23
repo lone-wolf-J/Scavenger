@@ -137,9 +137,82 @@ export function contentToText(content) {
   return htmlToText(content);
 }
 
+// ── Liveness verification ────────────────────────────────────────────
+// Selection rationale (Phase 10 §2): Greenhouse has a per-posting public
+// JSON API with deterministic semantics observed live 2026-09-18 —
+//   GET https://boards-api.greenhouse.io/v1/boards/{board}/jobs/{id}
+//   → 200 + {id, absolute_url, title, …}  = posting exists (ACTIVE)
+//   → 404 + {"status":404,"error":"Job not found"} = posting gone (NOT_FOUND)
+// Numeric stable IDs, an existing high-quality adapter (this file), and
+// fixtures below. Lever was rejected (public-API 404s on live Confidential
+// postings — api404Authoritative:false); Ashby needs whole-board pulls;
+// iCIMS/Indeed/Monster/CareerBuilder have no characterized closed semantics.
+
+/**
+ * Derive the per-posting boards-api URL for a stored job, or null when the
+ * job carries no verifiable Greenhouse posting URL. Only on-host board URLs
+ * are accepted; the EU board host maps to no known API host and yields
+ * UNKNOWN rather than a guessed endpoint.
+ * @param {{url?: string}} job
+ * @returns {string|null}
+ */
+export function detailUrlForJob(job) {
+  let u;
+  try {
+    u = new URL(String(job?.url || ''));
+  } catch {
+    return null;
+  }
+  if (u.protocol !== 'https:') return null;
+  const host = u.hostname.toLowerCase();
+  if (host !== 'boards.greenhouse.io' && host !== 'job-boards.greenhouse.io') return null;
+  const m = u.pathname.match(/^\/([^/]+)\/jobs\/(\d+)\/?$/);
+  if (!m) return null;
+  return `https://boards-api.greenhouse.io/v1/boards/${m[1]}/jobs/${m[2]}`;
+}
+
+/**
+ * Pure classifier over a per-posting API response. Exported for tests and
+ * the precision-eval framework (lib/verify-eval.mjs); verifyJob() is a thin
+ * fetch + evidence wrapper around it. Greenhouse serves no distinct
+ * "closed" state — removed postings 404 — so this classifier never returns
+ * CLOSED; absence stays an observation (reliableAbsence: false below).
+ * @param {{status: number, json?: any, url?: string}} res
+ * @returns {{status: string, evidenceType: string, confidence: string, reason: string, jobTitle?: string}}
+ */
+export function classifyGreenhouseDetail({ status, json = null, url = '' }) {
+  const where = url || 'detail API';
+  if (status === 404) {
+    return { status: 'NOT_FOUND', evidenceType: 'not_found_api', confidence: 'high', reason: `HTTP 404 from ${where}` };
+  }
+  if (status === 403) {
+    return { status: 'BLOCKED', evidenceType: 'blocked_page', confidence: 'high', reason: `HTTP 403 from ${where}` };
+  }
+  if (status === 429) {
+    return { status: 'RATE_LIMITED', evidenceType: 'provider_error', confidence: 'high', reason: `HTTP 429 from ${where}` };
+  }
+  if (Number.isInteger(status) && status >= 500 && status <= 599) {
+    return { status: 'TEMPORARILY_UNAVAILABLE', evidenceType: 'provider_error', confidence: 'medium', reason: `HTTP ${status} from ${where}` };
+  }
+  if (status !== 200) {
+    return { status: 'UNKNOWN', evidenceType: 'unparseable', confidence: 'low', reason: `unexpected HTTP ${status} from ${where}` };
+  }
+  const id = json?.id;
+  const title = typeof json?.title === 'string' ? json.title.trim().slice(0, 120) : '';
+  if ((typeof id === 'number' || typeof id === 'string') && String(id) && title) {
+    return { status: 'ACTIVE', evidenceType: 'api_record_active', confidence: 'high', reason: 'detail API returns the posting record', jobTitle: title };
+  }
+  return { status: 'UNKNOWN', evidenceType: 'unparseable', confidence: 'low', reason: 'detail API response carries no posting record' };
+}
+
 /** @type {Provider} */
 export default {
   id: 'greenhouse',
+
+  // The boards-api 404 looks authoritative, but no measured precision exists
+  // yet — and Lever proved an authoritative-looking ATS 404 can lie. NOT_FOUND
+  // stays an observation until the §6–7 gate is satisfied (Phase 10).
+  verify: { reliableAbsence: false },
 
   detect(entry) {
     try {
@@ -211,5 +284,52 @@ export default {
         postedAt: toEpochMs(j.first_published),
       };
     });
+  },
+
+  /**
+   * Liveness check for ONE known posting (providers/_types.js VerifyResult).
+   * One boards-api request. ACTIVE only for a 200 record carrying the posting
+   * id + title; NOT_FOUND for HTTP 404; HTTP errors map terminally (no retry
+   * into 429s); transport errors rethrow so lib/liveness-engine.mjs retries.
+   */
+  async verifyJob({ job, ctx }) {
+    const url = detailUrlForJob(job);
+    const observedAt = new Date().toISOString();
+    if (!url) {
+      return {
+        status: 'UNKNOWN',
+        evidence: {
+          type: 'unparseable',
+          provider: 'greenhouse',
+          source: String(job?.url || ''),
+          observedAt,
+          confidence: 'low',
+          reason: 'job has no Greenhouse posting URL — cannot verify',
+        },
+      };
+    }
+    assertGreenhouseUrl(url);
+    let status;
+    let json = null;
+    try {
+      json = await ctx.fetchJson(url, { redirect: 'error' });
+      status = 200;
+    } catch (err) {
+      if (err == null || typeof err.status !== 'number') throw err;
+      status = err.status;
+    }
+    const c = classifyGreenhouseDetail({ status, json, url });
+    return {
+      status: c.status,
+      evidence: {
+        type: c.evidenceType,
+        provider: 'greenhouse',
+        source: url,
+        observedAt,
+        confidence: c.confidence,
+        reason: c.reason,
+        ...(c.jobTitle ? { pageTitle: c.jobTitle } : {}),
+      },
+    };
   },
 };

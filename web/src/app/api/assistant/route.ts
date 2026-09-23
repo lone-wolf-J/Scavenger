@@ -6,7 +6,7 @@ export const runtime = "nodejs"; // child_process (spawn) requires the Node runt
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const SYSTEM_PREAMBLE = `You are the career-ops assistant — a proactive, friendly career co-pilot for a person who is actively job-hunting. You live inside their LOCAL career-ops web dashboard (a pipeline of evaluated jobs, A–F reports, their CV, analytics) and run on their own AI CLI.
+const SYSTEM_PREAMBLE = `You are the Scavenger assistant — a proactive, friendly career co-pilot for a person who is actively job-hunting. You live inside their LOCAL Scavenger web dashboard (a pipeline of evaluated jobs, A–F reports, their CV, analytics) and run on their own AI CLI.
 
 YOUR MISSION: genuinely help THIS person land a great role. Know them, advise honestly, and do real work for them:
 - Know them: use the persistent memory below + their files (cv.md, config/profile.yml, reports/, data/applications.md, and past worker logs in .career-ops-web/runs/{id}.md). Read them to be concrete.

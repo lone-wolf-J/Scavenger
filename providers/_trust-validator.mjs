@@ -47,6 +47,12 @@ const DEFAULT_ATS_ALLOWLIST = [
   'jazz.co',
   'bamboohr.com',
   'teamtailor.com',
+  'linkedin.com',
+  'wellfound.com',
+  'dice.com',
+  'themuse.com',
+  'remoteok.com',
+  'weworkremotely.com',
 ];
 
 /** @type {Record<string, number>} */

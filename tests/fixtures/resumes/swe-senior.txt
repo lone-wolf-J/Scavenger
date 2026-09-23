@@ -1,0 +1,21 @@
+John Smith
+Seattle, WA | john.smith@example.com | 206-555-0199
+
+Experience
+Senior Software Engineer — Nimbus Cloud (2020–Present)
+Tech lead for billing platform serving $4M ARR. Mentored 5 engineers. Python, Go, PostgreSQL, AWS.
+
+Software Engineer — Gamma LLC (2017–2020)
+Built REST APIs and data pipelines. Led 2 contractors on a migration.
+
+Software Engineer Intern — Gamma LLC (2016–2017)
+Prototyping and QA automation.
+
+Skills
+distributed systems, API design, code review, mentoring
+
+Technologies
+Python, Go, PostgreSQL, AWS, Kubernetes
+
+Education
+B.S. Computer Science, UW (2013–2017)

@@ -3,9 +3,9 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
-// The career-ops-docs home signature: an animated grain-gradient glow. Deferred
-// to browser idle, skipped on reduced-motion, ssr:false → zero LCP cost. Renders
-// grain in the corners (transparent center) so the dot-grid shows through.
+// Orchid-tinted animated grain-gradient glow. Deferred to browser idle,
+// skipped on reduced-motion, ssr:false → zero LCP cost. Renders grain in
+// the corners (transparent center) so the dot-grid shows through.
 const GrainGradient = dynamic(
   () => import("@paper-design/shaders-react").then((m) => m.GrainGradient),
   { ssr: false },
@@ -43,7 +43,7 @@ export function HeroGlow() {
   return (
     <GrainGradient
       className="absolute inset-0 z-0 animate-fade-in-delayed"
-      colors={dark ? ["#D5742E", "#9c2f05", "#7A2A0000"] : ["#f6c89a", "#e8a35f", "#D5742E00"]}
+      colors={dark ? ["#6833FF", "#2c1a6e", "#ff8bfb33"] : ["#c9b8ff", "#ac91ff", "#6833FF00"]}
       colorBack="#00000000"
       softness={1}
       intensity={dark ? 0.42 : 0.26}

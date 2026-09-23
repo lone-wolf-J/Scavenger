@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { instrumentSerif } from "@/lib/fonts";
+import { inter } from "@/lib/fonts";
 import { cn } from "@/lib/cn";
 
 // Stat tile with the home's resting gradient corner + lit edge + shadow. The
@@ -42,7 +42,7 @@ export function StatCard({
       <div
         className={cn(
           "mt-3 text-4xl leading-none tabular-nums",
-          featured ? instrumentSerif.className : "font-semibold",
+          featured ? inter.className : "font-semibold",
         )}
       >
         {value}

@@ -1,0 +1,335 @@
+{
+  "_comment": "Match-evaluation cases (Phase 11 §6). Synthetic-realistic public-style postings written for evaluation; no real company data. Labels are categorical relevance — never scores or ranks.",
+  "cases": [
+    {
+      "id": "swe-clear-backend",
+      "profileId": "eval-software-eng",
+      "job": {
+        "title": "Senior Backend Engineer",
+        "company": "Acme Corp",
+        "location": "Austin, TX",
+        "country": "US",
+        "description": "Senior backend engineer building distributed systems. Python, PostgreSQL, Kubernetes on AWS. Full-time, remote within the US.",
+        "url": "https://example.com/eval/swe-clear-backend",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time",
+        "salary": {
+          "min": 160000,
+          "max": null,
+          "currency": "USD"
+        }
+      },
+      "expected": {
+        "relevance": "CLEAR_MATCH",
+        "role": "Senior Backend Engineer",
+        "seniority": "senior",
+        "location": "US",
+        "workplace": "remote",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "fin-clear-fpa",
+      "profileId": "eval-finance",
+      "job": {
+        "title": "FP&A Manager",
+        "company": "Beta Inc",
+        "location": "New York, NY",
+        "country": "US",
+        "description": "FP&A Manager owning financial modeling, forecasting, and variance analysis for corporate finance. Excel and NetSuite. Full-time.",
+        "url": "https://example.com/eval/fin-clear-fpa",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "CLEAR_MATCH",
+        "role": "FP&A Manager",
+        "seniority": "manager",
+        "location": "US",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "hr-clear-vp",
+      "profileId": "eval-hr-leadership",
+      "job": {
+        "title": "VP People",
+        "company": "Gamma LLC",
+        "location": "Remote, US",
+        "country": "US",
+        "description": "VP People leading talent strategy, succession planning, and HR analytics for a technology company. Led teams of 10+. Full-time remote.",
+        "url": "https://example.com/eval/hr-clear-vp",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "CLEAR_MATCH",
+        "role": "VP People",
+        "seniority": "vp",
+        "location": "US",
+        "workplace": "remote",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "sales-clear-ae",
+      "profileId": "eval-sales",
+      "job": {
+        "title": "Enterprise Account Executive",
+        "company": "Delta Co",
+        "location": "Chicago, IL",
+        "country": "US",
+        "description": "Enterprise Account Executive for B2B software sales. Prospecting, discovery, negotiation, Salesforce. Full-time.",
+        "url": "https://example.com/eval/sales-clear-ae",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "CLEAR_MATCH",
+        "role": "Enterprise Account Executive",
+        "seniority": "mid",
+        "location": "US",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "pm-plausible-tpm",
+      "profileId": "eval-program-mgmt",
+      "job": {
+        "title": "Technical Program Manager",
+        "company": "Epsilon",
+        "location": "Seattle, WA",
+        "country": "US",
+        "description": "TPM driving software delivery: roadmapping, stakeholder management, risk management across engineering. Jira. Hybrid, full-time.",
+        "url": "https://example.com/eval/pm-plausible-tpm",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "PLAUSIBLE_MATCH",
+        "role": "Technical Program Manager",
+        "seniority": "senior",
+        "location": "US",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "swe-plausible-stepup",
+      "profileId": "eval-software-eng",
+      "job": {
+        "title": "Principal Backend Engineer",
+        "company": "Acme Corp",
+        "location": "Austin, TX",
+        "country": "US",
+        "description": "Principal backend engineer, Python distributed systems. One step above senior; staff-level scope. Full-time, Austin TX.",
+        "url": "https://example.com/eval/swe-plausible-stepup",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "PLAUSIBLE_MATCH",
+        "role": "Principal Backend Engineer",
+        "seniority": "principal",
+        "location": "US",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "swe-plausible-contract",
+      "profileId": "eval-software-eng",
+      "job": {
+        "title": "Senior Backend Engineer (Contract)",
+        "company": "Acme Corp",
+        "location": "Austin, TX",
+        "country": "US",
+        "description": "Contract senior backend engineer, Python and AWS, 6 months. Austin TX.",
+        "url": "https://example.com/eval/swe-plausible-contract",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "contract"
+      },
+      "expected": {
+        "relevance": "PLAUSIBLE_MATCH",
+        "role": "Senior Backend Engineer",
+        "seniority": "senior",
+        "location": "US",
+        "employment": "contract"
+      }
+    },
+    {
+      "id": "hr-role-variant",
+      "profileId": "eval-hr-leadership",
+      "job": {
+        "title": "Head of Talent Acquisition",
+        "company": "Zeta",
+        "location": "Remote, US",
+        "country": "US",
+        "description": "Head of Talent Acquisition owning hiring strategy and talent acquisition leadership. Full-time remote.",
+        "url": "https://example.com/eval/hr-role-variant",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "CLEAR_MATCH",
+        "role": "Head of Talent Acquisition",
+        "seniority": "head",
+        "location": "US",
+        "workplace": "remote",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "swe-unclear-junior",
+      "profileId": "eval-software-eng",
+      "job": {
+        "title": "Junior Frontend Developer",
+        "company": "Eta",
+        "location": "Austin, TX",
+        "country": "US",
+        "description": "Junior frontend developer, HTML/CSS/JavaScript. Entry-level, mentorship provided. Full-time.",
+        "url": "https://example.com/eval/swe-unclear-junior",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "UNCLEAR",
+        "role": "Junior Frontend Developer",
+        "seniority": "junior",
+        "location": "US",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "fin-unclear-execstretch",
+      "profileId": "eval-finance",
+      "job": {
+        "title": "Chief Financial Officer",
+        "company": "Theta",
+        "location": "New York, NY",
+        "country": "US",
+        "description": "CFO leading corporate finance, FP&A, forecasting. Executive scope. Full-time.",
+        "url": "https://example.com/eval/fin-unclear-execstretch",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "UNCLEAR",
+        "role": "Chief Financial Officer",
+        "seniority": "executive",
+        "location": "US",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "sales-unclear-berlin",
+      "profileId": "eval-sales",
+      "job": {
+        "title": "Account Executive",
+        "company": "Iota GmbH",
+        "location": "Berlin, Germany",
+        "country": "DE",
+        "description": "Account Executive for B2B software sales in Berlin. Prospecting and negotiation. Full-time.",
+        "url": "https://example.com/eval/sales-unclear-berlin",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "UNCLEAR",
+        "role": "Account Executive",
+        "seniority": "mid",
+        "location": "DE",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "swe-mismatch-nurse",
+      "profileId": "eval-software-eng",
+      "job": {
+        "title": "Staff Nurse, ICU",
+        "company": "Kappa Health",
+        "location": "Austin, TX",
+        "country": "US",
+        "description": "Staff nurse for intensive care. Patient care, clinical shifts. Full-time.",
+        "url": "https://example.com/eval/swe-mismatch-nurse",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "CLEAR_MISMATCH",
+        "role": "Staff Nurse",
+        "seniority": "staff",
+        "location": "US",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "fin-mismatch-people",
+      "profileId": "eval-finance",
+      "job": {
+        "title": "VP People",
+        "company": "Lambda",
+        "location": "Remote, US",
+        "country": "US",
+        "description": "VP People leading talent strategy and HR analytics. Full-time remote.",
+        "url": "https://example.com/eval/fin-mismatch-people",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "CLEAR_MISMATCH",
+        "role": "VP People",
+        "seniority": "vp",
+        "location": "US",
+        "employment": "full-time"
+      }
+    },
+    {
+      "id": "hr-unclear-agency",
+      "profileId": "eval-hr-leadership",
+      "job": {
+        "title": "HR Manager (Staffing Agency)",
+        "company": "Mu Staffing",
+        "location": "Dallas, TX",
+        "country": "US",
+        "description": "HR Manager placing contractors through our staffing agency. Full-time.",
+        "url": "https://example.com/eval/hr-mismatch-staffingveto",
+        "sources": [
+          "eval"
+        ],
+        "employmentType": "full-time"
+      },
+      "expected": {
+        "relevance": "UNCLEAR",
+        "role": "HR Manager",
+        "seniority": "manager",
+        "location": "US",
+        "employment": "full-time"
+      }
+    }
+  ]
+}

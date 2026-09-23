@@ -26,6 +26,8 @@
 *.txt   text eol=lf
 *.svg   text eol=lf
 Dockerfile text eol=lf
+Dockerfile.web text eol=lf
+*.sh text eol=lf
 LICENSE    text eol=lf
 VERSION    text eol=lf
 cops       text eol=lf

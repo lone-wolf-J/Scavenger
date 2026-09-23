@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { CadenceSettings } from "@/components/followups/cadence-settings";
+import { ApplicationSettings } from "@/components/config/application-settings";
 import { persistCliId, readSavedCliId } from "@/lib/saved-cli";
 
 type Cli = {
@@ -301,6 +302,8 @@ export function ConfigForm() {
       </button>
 
       <CadenceSettings />
+
+      <ApplicationSettings profiles={[]} />
 
       <div className="mt-8 flex items-center gap-3">
         <button

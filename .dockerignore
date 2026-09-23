@@ -1,5 +1,14 @@
 .git
 node_modules
+web/.next
+web/node_modules
+# User-layer data must never bake into a pushed image — it arrives via the
+# persistent volume at runtime (see scripts/railway-start.sh). All gitignored
+# upstream; excluded here so local builds match the git-based Railway context.
+data/
+interview-prep/
+output/
+documents/*
 output
 batch/logs
 batch/batch-state.tsv

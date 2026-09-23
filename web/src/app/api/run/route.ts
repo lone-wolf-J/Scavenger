@@ -15,6 +15,63 @@ import { createCvEnvelopeFilter, type CvEnvelope } from "@/lib/cv-envelope.mjs";
 import { buildPrompt, isShellSafeCompanyName } from "@/lib/run-prompts.mjs";
 import { claudeCliArgs } from "@/lib/claude-invocation.mjs";
 import { acquireTrackerWrite, releaseTrackerWrite } from "@/lib/core/run-registry";
+import { evaluateWithOpenRouter } from "@/lib/openrouter-evaluator.mjs";
+async function reserveReportNumber(root: string): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [path.join(root, "reserve-report-num.mjs")], {
+      cwd: root,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
+    child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
+
+    child.on("error", reject);
+
+    child.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(stderr.trim() || `Report number reservation failed (exit ${code}).`));
+        return;
+      }
+
+      const number = stdout.trim();
+      if (!/^\d{3,}$/.test(number)) {
+        reject(new Error(`Invalid report number returned by allocator: ${number || "(empty)"}`));
+        return;
+      }
+
+      resolve(number);
+    });
+  });
+}
+
+async function releaseReportNumber(root: string, number: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(
+      process.execPath,
+      [path.join(root, "reserve-report-num.mjs"), "--release", number],
+      {
+        cwd: root,
+        stdio: ["ignore", "ignore", "pipe"],
+      },
+    );
+
+    let stderr = "";
+    child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
+    child.on("error", reject);
+
+    child.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(stderr.trim() || `Report number release failed (exit ${code}).`));
+        return;
+      }
+      resolve();
+    });
+  });
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,10 +85,140 @@ export async function POST(req: Request) {
     return new Response(JSON.stringify({ error: "bad json" }), { status: 400 });
   }
   const { kind = "evaluate", input, cliId } = body;
-  if (!input || !cliId) {
+  if (!input || (!cliId && kind !== "evaluate")) {
     return new Response(JSON.stringify({ error: "input and cliId required" }), { status: 400 });
   }
-  const resolved = resolveCli(cliId);
+  // OpenRouter evaluator: evaluate directly when no local CLI is configured.
+  // The existing CLI path below remains unchanged for every other operation.
+  if (kind === "evaluate" && !cliId) {
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (event: Record<string, unknown>) => {
+          controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+        };
+
+        let reservedNumbers: number[] = [];
+
+        try {
+          send({ type: "status", label: "Fetching job descriptionÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦" });
+
+          let jobUrl: URL;
+          try {
+            jobUrl = new URL(input);
+          } catch {
+            throw new Error("Evaluate requires a valid job URL.");
+          }
+
+          if (!/^https?:$/.test(jobUrl.protocol)) {
+            throw new Error("Evaluate only supports HTTP(S) job URLs.");
+          }
+
+          const jdResponse = await fetch(jobUrl, {
+            headers: {
+              "User-Agent": "CareerOps/1.0 job-evaluator",
+              "Accept": "text/html,text/plain,application/xhtml+xml",
+            },
+            redirect: "follow",
+            signal: AbortSignal.timeout(30000),
+          });
+
+          if (!jdResponse.ok) {
+            throw new Error(`Could not fetch job page: HTTP ${jdResponse.status}`);
+          }
+
+          const jdText = await jdResponse.text();
+
+          if (!jdText.trim()) {
+            throw new Error("The job page returned an empty response.");
+          }
+
+          send({ type: "status", label: "Evaluating with OpenRouterÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦" });
+
+          const result = await evaluateWithOpenRouter({
+            root: careerOpsRoot(),
+            jdText,
+            model: process.env.OPENAI_MODEL || "nvidia/nemotron-3-super-120b-a12b:free",
+            baseUrl: process.env.OPENAI_BASE_URL || "https://openrouter.ai/api/v1",
+            apiKey: process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY,
+          });
+
+          send({ type: "text", text: result.evaluationText + "\n" });
+
+          send({ type: "status", label: "Saving evaluation reportÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦" });
+
+          const reportsDir = path.join(careerOpsRoot(), "reports");
+          if (!fs.existsSync(reportsDir)) {
+            fs.mkdirSync(reportsDir, { recursive: true });
+          }
+
+          const num = await reserveReportNumber(careerOpsRoot());
+          reservedNumbers = [parseInt(num, 10)];
+          const reportDate = new Date().toISOString().slice(0, 10);
+          const company = result.company || "Unknown";
+          const role = result.role || "Unknown Role";
+          const companySlug = company
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "") || "unknown-company";
+          const filename = `${num}-${companySlug}-${reportDate}.md`;
+          const reportPath = path.join(reportsDir, filename);
+
+          const reportContent = `# Evaluation: ${company} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ${role}
+
+**Date:** ${reportDate}
+**Archetype:** ${result.archetype || "Unknown"}
+**Score:** ${result.score || "?"}/5
+**Legitimacy:** ${result.legitimacy || "Unknown"}
+**PDF:** pending
+**Tool:** OpenRouter (${result.model} @ ${result.host})
+
+---
+
+${result.evaluationText.replace(/---SCORE_SUMMARY---[\s\S]*?---END_SUMMARY---/, "").trim()}
+`;
+
+          fs.writeFileSync(reportPath, reportContent, "utf-8");
+
+          send({
+            type: "status",
+            label: `Report saved: reports/${filename}`,
+          });
+
+          send({
+            type: "done",
+            tokens: result.usage?.total_tokens ?? 0,
+            costUsd: 0,
+          });
+        } catch (err) {
+          send({
+            type: "error",
+            msg: err instanceof Error ? err.message : String(err),
+          });
+        } finally {
+          if (reservedNumbers.length > 0) {
+            try {
+              await releaseReportNumber(careerOpsRoot(), String(reservedNumbers[0]).padStart(3, "0"));
+            } catch {
+              // Best effort; the report itself has already been written.
+            }
+          }
+
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+      },
+    });
+  }
+
+  const resolved = cliId ? resolveCli(cliId) : null;
   if (!resolved) {
     return new Response(JSON.stringify({ error: `CLI '${cliId}' not found` }), {
       status: 404,
@@ -40,7 +227,7 @@ export async function POST(req: Request) {
   }
   const { spec, binPath } = resolved;
 
-  // These run the REAL core (modes/scripts), not just data — fail clearly if the
+  // These run the REAL core (modes/scripts), not just data ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â fail clearly if the
   // root is incomplete instead of faking it.
   // The precondition must check the file the prompt will actually read. Pinning
   // it to modes/oferta.md meant a configured market passed a check on a file the
@@ -56,7 +243,7 @@ export async function POST(req: Request) {
   if (required && !fs.existsSync(/* turbopackIgnore: true */ requiredPath)) {
     return new Response(
       JSON.stringify({
-        error: `This needs a complete career-ops checkout (${required}). CAREER_OPS_ROOT has data only — point it at a full checkout.`,
+        error: `This needs a complete career-ops checkout (${required}). CAREER_OPS_ROOT has data only ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â point it at a full checkout.`,
       }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
@@ -68,16 +255,16 @@ export async function POST(req: Request) {
   // wrong portal.
   if (kind === "fix-portal" && !isShellSafeCompanyName(input)) {
     return new Response(
-      JSON.stringify({ error: "That company name has characters I can't safely pass to the portal checker — rename it in portals.yml first." }),
+      JSON.stringify({ error: "That company name has characters I can't safely pass to the portal checker ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â rename it in portals.yml first." }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
-  // An A–F score is meaningless without a CV to score against — the CLI would
+  // An AÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œF score is meaningless without a CV to score against ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â the CLI would
   // hallucinate a fit narrative and still emit a VERDICT. Require cv.md first.
   if ((kind === "evaluate" || kind === "pdf") && !fs.existsSync(path.join(careerOpsRoot(), "cv.md"))) {
     return new Response(
-      JSON.stringify({ error: "Add your CV first so I can score this against you — drop it on the home page." }),
+      JSON.stringify({ error: "Add your CV first so I can score this against you ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â drop it on the home page." }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
@@ -85,7 +272,7 @@ export async function POST(req: Request) {
   const today = new Date().toISOString().slice(0, 10);
 
   // Precompute deterministic scratch + final paths so the agent never chooses
-  // its own filenames — the backend owns naming, writing (#2185) and rendering
+  // its own filenames ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â the backend owns naming, writing (#2185) and rendering
   // (#2172). Nothing is cleared first: writeCvHtml rewrites the HTML
   // from this run's freshly parsed envelope before any render, and the agent is
   // no longer told these paths, so a stale file cannot survive into a render.
@@ -103,10 +290,10 @@ export async function POST(req: Request) {
 
   // Resolve the posting date HERE rather than asking the agent for it. The
   // scanner already wrote it from the provider's own `offer.postedAt`, so this
-  // copies a recorded value instead of inviting a guess — and modes/oferta.md is
+  // copies a recorded value instead of inviting a guess ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â and modes/oferta.md is
   // explicit that a guessed date is worse than an absent one (the POSTED column
-  // renders absent as `—`, a wrong date as a fresh req). Unknown URL → undefined
-  // → the prompt writes no segment at all.
+  // renders absent as `ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â`, a wrong date as a fresh req). Unknown URL ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ undefined
+  // ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ the prompt writes no segment at all.
   const postedAt =
     kind === "evaluate"
       ? readInbox().find((j) => j.url === input)?.postedAt ?? readScanDates().get(input)
@@ -115,14 +302,14 @@ export async function POST(req: Request) {
 
   const isClaude = cliId === "claude";
   // Which tools each kind gets, and the whole claude argv, live in
-  // claude-invocation.mjs — see its header for the policy and for why it is asserted on
+  // claude-invocation.mjs ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â see its header for the policy and for why it is asserted on
   // built values rather than on this file's source. NEVER auto-submits; that
   // remains a prompt-level guarantee.
   // Non-Claude CLIs get no tool flags from spec.args() at all, so their agents
   // stay unrestricted here. That gap is route-wide (it applies to 'evaluate' too),
-  // not specific to pdf, and each CLI needs its own mechanism researched — tracked
+  // not specific to pdf, and each CLI needs its own mechanism researched ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â tracked
   // as #2507 rather than half-fixed here. On those CLIs the backend is the only
-  // INTENDED writer — the agent is not asked to write — but that is mitigation, not
+  // INTENDED writer ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â the agent is not asked to write ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â but that is mitigation, not
   // enforcement: the capability is still there for an injected posting to reach.
   // A CLI with its own structured stream gets the argv that turns it on, so its
   // stdout matches spec.parseEvent below; spec.args stays the plain-text argv the
@@ -145,14 +332,14 @@ export async function POST(req: Request) {
   const persists = kind === "evaluate";
   const reportsBefore = persists ? reportEntries() : [];
   // Tracker-mutating runs hold a write token so a row delete can't race their merge
-  // (tracker.mjs delete doesn't yet share a lock with merge-tracker — see run-registry).
+  // (tracker.mjs delete doesn't yet share a lock with merge-tracker ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â see run-registry).
   const writeToken = kind === "evaluate" || kind === "pdf" ? acquireTrackerWrite() : null;
 
   // stdin must reach EOF or the CLI waits on piped input that never comes: Codex's
   // `exec` blocks reading stdin for additional context, hangs until the kill timer,
   // and then reports a generic "installed and authenticated?" error that reads as an
   // auth failure even though the CLI is fully signed in. #1973 fixed that here with
-  // an inline `stdio: ["ignore", …]`; spawnHeadlessCli generalizes the same fix to
+  // an inline `stdio: ["ignore", ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦]`; spawnHeadlessCli generalizes the same fix to
   // every CLI-invoking route (assistant, explore/ai, cv/ingest, the apply planners),
   // which had the identical bug, and puts it behind one tested helper so it cannot
   // drift back in on any single call site.
@@ -160,8 +347,8 @@ export async function POST(req: Request) {
   // Decode once on the stream, not per chunk. Buffer#toString() decodes each chunk
   // independently, so a chunk boundary falling inside a multi-byte UTF-8 sequence
   // yields a replacement character and mis-decodes the bytes after it. Those bytes
-  // are the CV now (#2185) — the agent's HTML flows through cvFilter to
-  // writeCvHtml and on to the renderer — and no structural check would catch it,
+  // are the CV now (#2185) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â the agent's HTML flows through cvFilter to
+  // writeCvHtml and on to the renderer ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â and no structural check would catch it,
   // because the envelope markers and </html> are ASCII and still match. Setting
   // the encoding makes Node hold partial sequences across chunks.
   child.stdout.setEncoding("utf8");
@@ -169,12 +356,12 @@ export async function POST(req: Request) {
   const enc = new TextEncoder();
 
   // `closed` + kill timer in the OUTER scope so cancel() (client disconnect) can
-  // flip `closed` before the child's late handlers run, and send() is try/catch'd —
+  // flip `closed` before the child's late handlers run, and send() is try/catch'd ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â
   // otherwise a late enqueue onto a closed controller throws uncaught (see #1155).
   let closed = false;
   let killer: ReturnType<typeof setTimeout> | undefined;
   // pdf-kind's render+mark work (renderPdf, below) keeps running detached even
-  // after the agent child closes — and even after a client disconnect fires
+  // after the agent child closes ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â and even after a client disconnect fires
   // cancel(). Track its promise so cancel() can defer releasing writeToken
   // until that work actually settles, instead of releasing the tracker-delete
   // guard while mark-pdf-ready.mjs is still actively writing applications.md.
@@ -189,9 +376,9 @@ export async function POST(req: Request) {
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       let buf = "";
-      let emittedText = false; // any assistant text delta → the CLI actually ran
+      let emittedText = false; // any assistant text delta ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ the CLI actually ran
       // Set ONLY by an authoritative structured-stream signal (the ev.error branch
-      // in processParsedLine below) — never by flagStderrLine. A stderr keyword
+      // in processParsedLine below) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â never by flagStderrLine. A stderr keyword
       // match is a guess, not a verdict; see stderrErrorSnippet.
       let sawError = false;
       let stderrBuf = "";
@@ -202,39 +389,39 @@ export async function POST(req: Request) {
       // successful run as failed on six of the eight runtimes (#1974).
       const isFatalStderr = spec.stderrIsFatal ?? isFatalGenericStderr;
       // Snippet only, never fatality. isFatalStderr is a keyword guess over a
-      // CLI's own stderr chatter, not a verdict — trusting it to fail the run
+      // CLI's own stderr chatter, not a verdict ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â trusting it to fail the run
       // outright is exactly the bug #1974 reported: "Authentication successful"
       // matched a bare `auth` and marked a clean, successful run as an error, on
       // six of the eight runtimes. The close handler below is the sole place that
       // decides fatality, from cleanExit and the CLI's own structured error event
-      // (authoritative — see the ev.error branch in processParsedLine); this only
+      // (authoritative ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â see the ev.error branch in processParsedLine); this only
       // captures human-readable detail for whichever message that decision needs.
       let stderrErrorSnippet: string | null = null;
       const flagStderrLine = (line: string) => {
         if (stderrErrorSnippet || !line.trim() || !isFatalStderr(line)) return;
         stderrErrorSnippet = line.trim().slice(0, 200);
       };
-      let lastTokens = 0; // per-run token cost from the CLI's structured usage event (#6) — local only
+      let lastTokens = 0; // per-run token cost from the CLI's structured usage event (#6) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â local only
       let lastCostUsd: number | null = null;
       // pdf-mode's agent only tailors content now (rendering moved to the
-      // backend, #2172) — but its killMs still has to leave real headroom
+      // backend, #2172) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â but its killMs still has to leave real headroom
       // inside the route's overall maxDuration (800s): the render+mark phase
       // (renderPdf, below) starts only after this timer's window and has no
       // timeout of its own, so an agent that runs close to its full budget
       // would otherwise leave the platform's hard maxDuration cutoff to kill
-      // generate-pdf.mjs mid-render. 600s agent / ~200s render is ample —
+      // generate-pdf.mjs mid-render. 600s agent / ~200s render is ample ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â
       // a Chromium PDF render normally takes low tens of seconds even with a
       // cold Playwright launch.
       // pdf keeps 600s because its render+mark phase runs AFTER this timer; a
       // plain evaluate has no such phase, so it can use almost the whole 800s
-      // budget. 285s was cutting real evaluations off mid-run — reading the mode
+      // budget. 285s was cutting real evaluations off mid-run ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â reading the mode
       // and profile, fetching the posting, ~25 Bash calls and a few web searches
-      // routinely run past it — and the SIGTERM then surfaced as "didn't save a
+      // routinely run past it ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â and the SIGTERM then surfaced as "didn't save a
       // report" (see the close handler), blaming the CLI for a limit we imposed
       // (#3124). 780s leaves ~20s under maxDuration for a graceful shutdown.
       const killMs = killMsForKind(kind);
       // Set by the killer so the close handler can tell "we timed it out" apart
-      // from "the CLI exited on its own" — different failures, different message.
+      // from "the CLI exited on its own" ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â different failures, different message.
       let killedByTimeout = false;
       killer = setTimeout(() => {
         killedByTimeout = true;
@@ -259,7 +446,7 @@ export async function POST(req: Request) {
       // Time-based keepalive. The stream is silent whenever the agent is thinking
       // or inside a long tool call, and in pdf mode it is silent for the whole
       // 15-25 KB <<cv-html>> envelope (cvFilter swallows every byte). Measured
-      // idle gaps on a real pdf run reached 149s — long enough for the browser or
+      // idle gaps on a real pdf run reached 149s ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â long enough for the browser or
       // a proxy to drop the connection, after which the client reports
       // "Connection error" even though the agent finished and the PDF rendered.
       // It must be a timer, not a hook on incoming text: piggy-backing on agent
@@ -278,11 +465,11 @@ export async function POST(req: Request) {
       // pdf's CV arrives inline in a <<cv-html>> envelope instead of being written
       // by the agent (#2185). The filter keeps every byte for the backend while
       // holding the 15-25 KB body out of the run log, which is the agent's
-      // narration — see cv-envelope.mjs.
+      // narration ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â see cv-envelope.mjs.
       const cvFilter = kind === "pdf" ? createCvEnvelopeFilter() : null;
       // While the agent emits the 15-25 KB <<cv-html>> envelope, cvFilter swallows
       // every byte, so the response stream goes completely silent for as long as
-      // the model takes to write the CV — a minute or more. Nothing downstream can
+      // the model takes to write the CV ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â a minute or more. Nothing downstream can
       // tell that from a hung request, and the browser/proxy drops the connection;
       // the client then reports "Connection error" even though the agent is fine
       // and the PDF renders correctly server-side. Emit a throttled keepalive so
@@ -294,7 +481,7 @@ export async function POST(req: Request) {
       };
       /** Surface non-fatal issues in the run log rather than only a server log. */
       const sendWarnings = (warnings: string[]) => {
-        for (const w of warnings) send({ type: "text", text: `⚠️ ${w}\n` });
+        for (const w of warnings) send({ type: "text", text: `ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â ${w}\n` });
       };
       /** Persist the emitted CV; streams the reason and returns false on failure. */
       const saveCv = (paths: PdfPaths, envelope: CvEnvelope) => {
@@ -352,7 +539,7 @@ export async function POST(req: Request) {
         // raw chunk both misses an error split across two of them and can match a
         // fragment that is not the word it looks like. The captured snippet only
         // supplies message text for whichever failure the close handler already
-        // decided on — it never sets sawError itself (see flagStderrLine above).
+        // decided on ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â it never sets sawError itself (see flagStderrLine above).
         stderrBuf += chunk;
         let nl;
         while ((nl = stderrBuf.indexOf("\n")) !== -1) {
@@ -364,19 +551,19 @@ export async function POST(req: Request) {
       // Render + mark-tracker-ready live in pdf-render.mjs (plain, dependency-
       // injected, unit-tested) so the render-then-mark orchestration isn't
       // buried untested inside this transport-layer closure. Runs generate-
-      // pdf.mjs and mark-pdf-ready.mjs as plain Node child processes — no agent
-      // CLI or its sandbox involved — so a browser launch never depends on an
+      // pdf.mjs and mark-pdf-ready.mjs as plain Node child processes ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â no agent
+      // CLI or its sandbox involved ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â so a browser launch never depends on an
       // interactive approval nobody is present to grant in a headless/web-
-      // triggered run (#2172). The tracker is marked ✅ only after a CONFIRMED
-      // successful render, not optimistically — same honesty-gate discipline as
+      // triggered run (#2172). The tracker is marked ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ only after a CONFIRMED
+      // successful render, not optimistically ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â same honesty-gate discipline as
       // the evaluate path below.
       const renderPdf = async (paths: PdfPaths, format: "letter" | "a4") => {
-        send({ type: "status", label: "Rendering PDF…" });
-        // renderAndMarkPdf is designed to resolve, never throw — but this is
+        send({ type: "status", label: "Rendering PDFÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦" });
+        // renderAndMarkPdf is designed to resolve, never throw ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â but this is
         // the one place nothing else awaits or catches this promise (cancel()
         // only attaches a .finally for the write-token release), so an
         // unexpected exception here must still close the stream instead of
-        // leaving it — and the write-token — open until process shutdown.
+        // leaving it ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â and the write-token ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â open until process shutdown.
         try {
           const result = await renderAndMarkPdf({
             spawnFn: spawn,
@@ -406,10 +593,10 @@ export async function POST(req: Request) {
         // A trailing line with no newline would otherwise never be tested.
         if (stderrBuf) { flagStderrLine(stderrBuf); stderrBuf = ""; }
         // A client disconnect can fire cancel() (which kills `child`) before
-        // this event finally arrives — killing a process doesn't make its
+        // this event finally arrives ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â killing a process doesn't make its
         // 'close' event disappear, just delays it. Without this guard a pdf
         // run could still start a brand-new render (and re-touch the tracker)
-        // after the stream — and its writeToken guard — is already gone.
+        // after the stream ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â and its writeToken guard ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â is already gone.
         if (closed) return;
         // A timeout is the ROOT cause behind every "no report / not clean"
         // symptom the gates below test, so classify it FIRST, for any kind.
@@ -425,7 +612,7 @@ export async function POST(req: Request) {
           return close();
         }
         // A final JSONL line with no trailing newline stays in `buf` forever
-        // otherwise — flush it through the same parser so the usage/result event it
+        // otherwise ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â flush it through the same parser so the usage/result event it
         // usually carries (the last one of a run) isn't lost. Ahead of the pdf branch,
         // not just the evaluate gate: the pdf path reports lastTokens too.
         const trailing = buf.trim();
@@ -434,16 +621,16 @@ export async function POST(req: Request) {
           processParsedLine(trailing);
         }
         const cleanExit = code === 0; // non-zero OR null (killed/signal) = NOT clean
-        // Shared by both honesty gates below — the pdf gate receives it as
-        // pdfRunOutcome's noOutputMessage — because a CLI that produced no output at
+        // Shared by both honesty gates below ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â the pdf gate receives it as
+        // pdfRunOutcome's noOutputMessage ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â because a CLI that produced no output at
         // all is the same failure mode whether it was evaluating or tailoring
-        // a PDF — one place for the condition/message pair instead of two.
+        // a PDF ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â one place for the condition/message pair instead of two.
         const noOutputError = (): string | null => {
           if (!emittedText && !sawError && !cleanExit) {
             const detail = stderrErrorSnippet ? ` (${stderrErrorSnippet})` : "";
-            return `The CLI exited with an error — is it installed and authenticated?${detail}`;
+            return `The CLI exited with an error ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â is it installed and authenticated?${detail}`;
           }
-          if (!emittedText && !sawError) return "The CLI produced no output — is it installed and authenticated? (career-ops is best on Claude Code.)";
+          if (!emittedText && !sawError) return "The CLI produced no output ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â is it installed and authenticated? (career-ops is best on Claude Code.)";
           return null;
         };
 
@@ -468,9 +655,9 @@ export async function POST(req: Request) {
           } else if (!pdfPaths || envelope?.ok !== true) {
             // Unreachable: pdfRunOutcome validated both via hasPaths/envelope.ok.
             // Kept for narrowing, but it must REPORT rather than fall through to a
-            // bare close() — a stream that ends with neither error nor done is the
+            // bare close() ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â a stream that ends with neither error nor done is the
             // one outcome this handler exists to prevent.
-            send({ type: "error", msg: "Internal error: the pdf run passed its gate with no CV to save — please report this." });
+            send({ type: "error", msg: "Internal error: the pdf run passed its gate with no CV to save ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â please report this." });
           } else {
             sendWarnings(envelope.warnings);
             if (saveCv(pdfPaths, envelope)) {
@@ -487,22 +674,22 @@ export async function POST(req: Request) {
         const wroteReport = hasNewCompletedReport(reportsBefore, reportEntries());
         // Honesty gate (#9): a green "done" with a parsed score requires a CLEAN exit,
         // real output, AND (for evaluations) a report actually written. Anything else
-        // is surfaced — an errored run must never be banked as a confident score.
+        // is surfaced ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â an errored run must never be banked as a confident score.
         const baseErr = noOutputError();
         if (baseErr) {
           send({ type: "error", msg: baseErr });
         } else if (persists && !wroteReport) {
           // The worker ran but never wrote the report/tracker row (e.g. a CLI
-          // without file-write authorization) — surface it instead of a fake score.
+          // without file-write authorization) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â surface it instead of a fake score.
           send({ type: "error", msg: "This evaluation didn't save a report, so it's not in your tracker. Full evaluation is verified on Claude Code." });
         } else if (!cleanExit || sawError) {
-          // Produced output (maybe even a report) but did NOT finish cleanly — flag it
+          // Produced output (maybe even a report) but did NOT finish cleanly ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â flag it
           // instead of recording a confident score off a half-finished run. sawError
           // here means an authoritative structured error already sent its own
           // message above; a bare non-clean exit gets the stderr snippet instead,
           // when the heuristic classifier found one.
           const detail = !sawError && stderrErrorSnippet ? ` (${stderrErrorSnippet})` : "";
-          send({ type: "error", msg: `This run hit an error before finishing, so it isn't recorded as a confident result — re-run it to verify.${detail}`.slice(0, 200) });
+          send({ type: "error", msg: `This run hit an error before finishing, so it isn't recorded as a confident result ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â re-run it to verify.${detail}`.slice(0, 200) });
         } else {
           send({ type: "done", tokens: lastTokens, costUsd: lastCostUsd });
         }
@@ -514,7 +701,7 @@ export async function POST(req: Request) {
       if (killer) clearTimeout(killer);
       try { child.kill("SIGTERM"); } catch { /* ignore */ }
       if (pdfRenderPromise) {
-        // Render/mark keeps running after this client disconnects — wait for
+        // Render/mark keeps running after this client disconnects ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â wait for
         // it to settle before releasing the guard, so a concurrent tracker
         // delete can't race mark-pdf-ready.mjs's still-in-flight write.
         pdfRenderPromise.finally(releaseWriteTokenOnce);
@@ -532,3 +719,12 @@ export async function POST(req: Request) {
     },
   });
 }
+
+
+
+
+
+
+
+
+

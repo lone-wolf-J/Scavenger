@@ -1,7 +1,7 @@
 {
   "name": "career-ops",
   "version": "1.31.0",
-  "description": "AI-powered job search pipeline — works with any AI coding CLI (Claude Code, Codex, OpenCode, Antigravity, Grok, Qwen, Kimi, Copilot)",
+  "description": "Scavenger — general-purpose opportunity intelligence: discovers, understands and matches opportunities against multiple professional profiles",
   "private": true,
   "engines": {
     "node": ">=18"
@@ -70,6 +70,7 @@
     "manifesto": "node manifesto.mjs"
   },
   "keywords": [
+    "scavenger",
     "ai",
     "job-search",
     "claude-code",

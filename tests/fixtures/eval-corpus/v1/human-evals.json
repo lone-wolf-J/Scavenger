@@ -1,0 +1,463 @@
+{
+  "_comment": "Blind human evaluations, corpus v1 (Phase 12 §9-10). Labeled from posting title/company/location/description only, BEFORE any Scavenger score was computed for these records. No scores, no bands anywhere in this file (schema-enforced). evaluatorId is a role identifier, not personal information.",
+  "evaluatorId": "phase12-evaluator",
+  "corpusVersion": "v1",
+  "evaluations": [
+    {
+      "evaluationId": "he-001",
+      "profileId": "eval-software-eng",
+      "evaluationJobId": "corpus-v1-0004",
+      "evaluationLabel": "CLEAR_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Senior Backend Engineer matches target role exactly"
+        },
+        {
+          "dimension": "seniority",
+          "note": "senior title matches senior profile"
+        },
+        {
+          "dimension": "skills",
+          "note": "Python in title matches profile skill"
+        },
+        {
+          "dimension": "location",
+          "note": "Fort Worth TX is US"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-002",
+      "profileId": "eval-software-eng",
+      "evaluationJobId": "corpus-v1-0006",
+      "evaluationLabel": "PLAUSIBLE_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Senior Backend Engineer with Python/FastAPI matches"
+        },
+        {
+          "dimension": "workplace",
+          "note": "bare Remote with no US qualifier is ambiguous"
+        },
+        {
+          "dimension": "skills",
+          "note": "Python and FastAPI in title"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-003",
+      "profileId": "eval-software-eng",
+      "evaluationJobId": "corpus-v1-0021",
+      "evaluationLabel": "CLEAR_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Senior Backend Engineer, Inference Platform"
+        },
+        {
+          "dimension": "seniority",
+          "note": "senior matches senior"
+        },
+        {
+          "dimension": "location",
+          "note": "San Francisco CA is US"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-004",
+      "profileId": "eval-software-eng",
+      "evaluationJobId": "corpus-v1-0025",
+      "evaluationLabel": "CLEAR_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Senior Backend Engineer, Generative AI Platform"
+        },
+        {
+          "dimension": "seniority",
+          "note": "senior matches senior"
+        },
+        {
+          "dimension": "industry",
+          "note": "platform/systems work matches distributed-systems domain"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-005",
+      "profileId": "eval-software-eng",
+      "evaluationJobId": "corpus-v1-0086",
+      "evaluationLabel": "CLEAR_MISMATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Accommodations Partner (HR) is not engineering work"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-006",
+      "profileId": "eval-software-eng",
+      "evaluationJobId": "corpus-v1-0088",
+      "evaluationLabel": "CLEAR_MISMATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Account Executive is sales, not engineering"
+        },
+        {
+          "dimension": "location",
+          "note": "Singapore is non-US"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-007",
+      "profileId": "eval-software-eng",
+      "evaluationJobId": "corpus-v1-0083",
+      "evaluationLabel": "PLAUSIBLE_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Manager Software Engineering is adjacent (management vs senior IC)"
+        },
+        {
+          "dimension": "seniority",
+          "note": "manager scope is one step above senior"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-008",
+      "profileId": "eval-program-mgmt",
+      "evaluationJobId": "corpus-v1-0056",
+      "evaluationLabel": "PLAUSIBLE_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Technical Program Manager III matches TPM target"
+        },
+        {
+          "dimension": "employment",
+          "note": "contractor posting vs full-time preference"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-009",
+      "profileId": "eval-program-mgmt",
+      "evaluationJobId": "corpus-v1-0062",
+      "evaluationLabel": "CLEAR_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Program Manager AI matches target"
+        },
+        {
+          "dimension": "location",
+          "note": "hybrid New York NY is US"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-010",
+      "profileId": "eval-program-mgmt",
+      "evaluationJobId": "corpus-v1-0061",
+      "evaluationLabel": "CLEAR_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Senior AI Program Manager matches senior TPM"
+        },
+        {
+          "dimension": "seniority",
+          "note": "senior matches senior"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-011",
+      "profileId": "eval-program-mgmt",
+      "evaluationJobId": "corpus-v1-0085",
+      "evaluationLabel": "CLEAR_MISMATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Sr Director CTO FP&A is finance leadership, not program management"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-012",
+      "profileId": "eval-program-mgmt",
+      "evaluationJobId": "corpus-v1-0004",
+      "evaluationLabel": "CLEAR_MISMATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Backend Engineer is engineering IC, not program management"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-013",
+      "profileId": "eval-finance",
+      "evaluationJobId": "corpus-v1-0078",
+      "evaluationLabel": "CLEAR_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Technology Finance Manager FP&A matches Finance Manager target"
+        },
+        {
+          "dimension": "skills",
+          "note": "FP&A in title matches"
+        },
+        {
+          "dimension": "location",
+          "note": "St Petersburg FL is US"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-014",
+      "profileId": "eval-finance",
+      "evaluationJobId": "corpus-v1-0080",
+      "evaluationLabel": "PLAUSIBLE_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Senior Financial Manager is finance management"
+        },
+        {
+          "dimension": "seniority",
+          "note": "senior title is one step above mid profile"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-015",
+      "profileId": "eval-finance",
+      "evaluationJobId": "corpus-v1-0085",
+      "evaluationLabel": "UNCLEAR",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "CTO FP&A is finance-adjacent leadership"
+        },
+        {
+          "dimension": "seniority",
+          "note": "director scope is far above mid profile"
+        },
+        {
+          "dimension": "location",
+          "note": "no location provided"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-016",
+      "profileId": "eval-finance",
+      "evaluationJobId": "corpus-v1-0086",
+      "evaluationLabel": "CLEAR_MISMATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Accommodations Partner is HR, not finance"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-017",
+      "profileId": "eval-sales",
+      "evaluationJobId": "corpus-v1-0036",
+      "evaluationLabel": "CLEAR_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Enterprise Account Executive matches AE target"
+        },
+        {
+          "dimension": "location",
+          "note": "Remote US is explicit US remote"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-018",
+      "profileId": "eval-sales",
+      "evaluationJobId": "corpus-v1-0088",
+      "evaluationLabel": "UNCLEAR",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Account Executive DNB matches AE target"
+        },
+        {
+          "dimension": "location",
+          "note": "Singapore is non-US; retrieval would drop it"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-019",
+      "profileId": "eval-sales",
+      "evaluationJobId": "corpus-v1-0042",
+      "evaluationLabel": "PLAUSIBLE_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Senior Solutions Engineer is sales-adjacent, not quota AE"
+        },
+        {
+          "dimension": "seniority",
+          "note": "senior title vs mid profile"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-020",
+      "profileId": "eval-sales",
+      "evaluationJobId": "corpus-v1-0086",
+      "evaluationLabel": "CLEAR_MISMATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Accommodations Partner is HR, not sales"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-021",
+      "profileId": "eval-hr-leadership",
+      "evaluationJobId": "corpus-v1-0086",
+      "evaluationLabel": "PLAUSIBLE_MATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Accommodations Partner is people/HR-adjacent, not leadership"
+        },
+        {
+          "dimension": "seniority",
+          "note": "partner IC scope vs executive profile"
+        },
+        {
+          "dimension": "industry",
+          "note": "technology company matches"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-022",
+      "profileId": "eval-hr-leadership",
+      "evaluationJobId": "corpus-v1-0004",
+      "evaluationLabel": "CLEAR_MISMATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Backend Engineer is engineering, not HR"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-023",
+      "profileId": "eval-hr-leadership",
+      "evaluationJobId": "corpus-v1-0095",
+      "evaluationLabel": "CLEAR_MISMATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "AI Operations Engineer is engineering operations, not HR"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    },
+    {
+      "evaluationId": "he-024",
+      "profileId": "eval-hr-leadership",
+      "evaluationJobId": "corpus-v1-0085",
+      "evaluationLabel": "CLEAR_MISMATCH",
+      "evaluationReasons": [
+        {
+          "dimension": "role",
+          "note": "Sr Director CTO FP&A is finance, not HR"
+        }
+      ],
+      "evaluatorId": "phase12-evaluator",
+      "evaluatedAt": "2026-09-21T17:30:00.000Z",
+      "corpusVersion": "v1"
+    }
+  ]
+}

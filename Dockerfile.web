@@ -1,0 +1,36 @@
+# career-ops web — production image for Railway (or any container host).
+#
+# Layout notes:
+# - The Next app lives in web/ but loads domain libs from <root>/lib at
+#   runtime (see web/src/lib/scavenger/core.ts), so the whole repo is the
+#   build context — NOT web/ alone.
+# - Root `npm ci` runs with --ignore-scripts: the root postinstall downloads
+#   Chromium, which this image never needs (PDF/print stays a local path).
+# - No user data is baked in (gitignored + .dockerignore). Persistence comes
+#   from a mounted volume, wired up in scripts/railway-start.sh.
+
+FROM node:22-bookworm-slim
+
+# NOTE: NODE_ENV stays unset until after `npm ci` + build — npm omits
+# devDependencies under NODE_ENV=production, and the Next build needs them
+# (@tailwindcss/postcss, typescript, tailwindcss).
+ENV NEXT_TELEMETRY_DISABLED=1
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci --ignore-scripts --no-audit --no-fund \
+  --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+
+COPY web/package.json web/package-lock.json* ./web/
+WORKDIR /app/web
+RUN npm ci --ignore-scripts --no-audit --no-fund \
+  --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+WORKDIR /app
+COPY . .
+RUN npm --prefix web run build
+
+ENV NODE_ENV=production
+
+EXPOSE 3000
+CMD ["bash", "scripts/railway-start.sh"]

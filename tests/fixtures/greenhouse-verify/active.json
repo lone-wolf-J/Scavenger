@@ -1,0 +1,11 @@
+{
+  "_provenance": "trimmed live capture 2026-09-18; fields subset (id, absolute_url, title, company_name, location, updated_at)",
+  "id": 5421031008,
+  "absolute_url": "https://job-boards.greenhouse.io/anthropic/jobs/5421031008",
+  "title": "Accommodations Partner",
+  "company_name": "Anthropic",
+  "location": {
+    "name": "San Francisco, CA | Seattle, WA"
+  },
+  "updated_at": "2026-09-17T17:25:09-04:00"
+}
