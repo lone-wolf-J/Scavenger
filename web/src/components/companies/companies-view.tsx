@@ -193,7 +193,7 @@ export function CompaniesView({ profiles }: { profiles: ProfileRef[] }) {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ text: input }),
     }).then((r) => r.json());
-    if (!parsed.companies?.length) { setNotice("No company names found — try e.g. Qualcomm, Deckers Corporation"); return; }
+    if (!parsed.companies?.length) { setNotice("No company names found — try e.g. Acme, Globex"); return; }
     if (parsed.dropped?.length) setNotice(`Skipped: ${parsed.dropped.join(", ")}`);
     const fresh: CompanyState[] = parsed.companies.map((name: string) => ({
       name, phase: "queued" as const, detail: "Queued", results: [], totalMatched: 0,
@@ -277,7 +277,7 @@ export function CompaniesView({ profiles }: { profiles: ProfileRef[] }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-            placeholder='Try "Qualcomm, Deckers Corporation" — or "find jobs at Qualcomm and Deckers"'
+            placeholder='Try "Acme, Globex" — or "find jobs at Acme and Globex"'
             className="w-full bg-transparent text-sm text-foreground placeholder:text-faint focus:outline-none"
           />
           <button onClick={submit} disabled={crawling || !input.trim()}
@@ -286,14 +286,8 @@ export function CompaniesView({ profiles }: { profiles: ProfileRef[] }) {
             {crawling ? `Crawling… ${elapsed}s` : "Crawl"}
           </button>
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted">
-          <span>Multiple companies at once — separate with commas. Quick test:</span>
-          {["Qualcomm", "Deckers Corporation"].map((c) => (
-            <button key={c} onClick={() => setInput((v) => (v.trim() ? `${v.replace(/,\s*$/, "")}, ${c}` : c))}
-              className="rounded-full border border-border px-2 py-0.5 hover:bg-surface-hover hover:text-foreground">
-              {c}
-            </button>
-          ))}
+        <div className="mt-2 text-xs text-muted">
+          Multiple companies at once — separate with commas.
         </div>
       </div>
 
