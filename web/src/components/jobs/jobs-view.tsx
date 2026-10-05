@@ -14,7 +14,7 @@ type Match = {
   matchedSignals?: string[];
   missingSignals?: string[];
 };
-type Agg = {
+export type Agg = {
   jobId: string;
   best: Match;
   matches: Match[];
@@ -110,7 +110,7 @@ function DiscoveryProgress({ discovery, elapsed }: { discovery: DiscoveryResult;
   );
 }
 
-function ApplyPanel({ agg, profileId, profileName, onApplied, onClose }: {
+export function ApplyPanel({ agg, profileId, profileName, onApplied, onClose }: {
   agg: Agg; profileId: string; profileName: string;
   onApplied: () => void; onClose: () => void;
 }) {

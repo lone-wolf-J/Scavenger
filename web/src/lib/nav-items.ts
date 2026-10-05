@@ -1,4 +1,4 @@
-import { Home, Briefcase, FileCheck, Users, Settings } from "lucide-react";
+import { Home, Briefcase, Building2, FileCheck, Users, Settings } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 // Single source of truth for the app's primary destinations — shared by the
@@ -10,10 +10,11 @@ export type NavItem = {
   chip?: string;
 };
 
-// Primary navigation — four items only. Everything else is secondary.
+// Primary navigation — everything else is secondary.
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Home", icon: Home },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
+  { href: "/companies", label: "Target Companies", icon: Building2 },
   { href: "/applications", label: "Applications", icon: FileCheck },
   { href: "/profiles", label: "Profiles", icon: Users },
 ];
