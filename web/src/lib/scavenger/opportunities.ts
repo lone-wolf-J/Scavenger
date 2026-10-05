@@ -46,7 +46,12 @@ function toMatchableJob(inbox: {
 export async function getSelectedProfiles(ids?: string[]) {
   const state = await getWorkspace();
   const active = (state.profiles || []).filter((p: Any) => p.state === "active");
-  const want = ids && ids.length ? new Set(ids) : new Set(state.selectedProfileIds || active.map((p: Any) => p.id));
+  // An explicitly empty selection (fresh workspace default []) means "all",
+  // matching the UI's default-select-all checkboxes — never "none".
+  const stored = Array.isArray(state.selectedProfileIds) && state.selectedProfileIds.length
+    ? state.selectedProfileIds
+    : active.map((p: Any) => p.id);
+  const want = ids && ids.length ? new Set(ids) : new Set(stored);
   return active
     .filter((p: Any) => want.has(p.id))
     .map((p: Any) => ({ id: p.id, name: p.name, profile: p.profile }));
