@@ -1,6 +1,6 @@
 {
   "name": "career-ops",
-  "version": "1.31.0",
+  "version": "1.32.0",
   "description": "Scavenger — general-purpose opportunity intelligence: discovers, understands and matches opportunities against multiple professional profiles",
   "private": true,
   "engines": {
