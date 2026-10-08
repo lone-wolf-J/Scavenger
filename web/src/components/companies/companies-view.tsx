@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Building2, Send, Loader2, Search, ExternalLink, Bookmark, BookmarkCheck,
-  X, ChevronDown, ChevronUp, Sparkles,
+  X, ChevronDown, ChevronUp, Sparkles, Upload, Download,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { ApplyPanel, type Agg } from "@/components/jobs/jobs-view";
@@ -160,9 +160,11 @@ export function CompaniesView({ profiles }: { profiles: ProfileRef[] }) {
   const [selected, setSelected] = useState<string[]>(profiles.map((p) => p.id));
   const [companies, setCompanies] = useState<CompanyState[]>([]);
   const [crawling, setCrawling] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [notice, setNotice] = useState("");
   const aliveRef = useRef(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false; }; }, []);
 
   const names = Object.fromEntries(profiles.map((p) => [p.id, p.name]));
@@ -185,30 +187,20 @@ export function CompaniesView({ profiles }: { profiles: ProfileRef[] }) {
     })));
   }
 
-  async function submit() {
-    if (crawling || !input.trim()) return;
-    if (!selected.length) { setNotice("Select at least one profile first."); return; }
-    setNotice("");
-    const parsed = await fetch("/api/sc/companies/crawl", {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text: input }),
-    }).then((r) => r.json());
-    if (!parsed.companies?.length) { setNotice("No company names found — try e.g. Acme, Globex"); return; }
-    if (parsed.dropped?.length) setNotice(`Skipped: ${parsed.dropped.join(", ")}`);
-    const fresh: CompanyState[] = parsed.companies.map((name: string) => ({
+  async function crawlList(names: string[]) {
+    const fresh: CompanyState[] = names.map((name: string) => ({
       name, phase: "queued" as const, detail: "Queued", results: [], totalMatched: 0,
     }));
     setCompanies((prev) => {
       const known = new Set(prev.map((c) => c.name.toLowerCase()));
       return [...prev, ...fresh.filter((c) => !known.has(c.name.toLowerCase()))];
     });
-    setInput("");
     setCrawling(true);
     setElapsed(0);
     const t0 = Date.now();
     const timer = setInterval(() => { if (aliveRef.current) setElapsed(Math.round((Date.now() - t0) / 1000)); }, 500);
     try {
-      for (const name of parsed.companies as string[]) {
+      for (const name of names as string[]) {
         if (!aliveRef.current) break;
         patchCompany(name, { phase: "crawling", detail: "Resolving career site…" });
         try {
@@ -246,6 +238,81 @@ export function CompaniesView({ profiles }: { profiles: ProfileRef[] }) {
     }
   }
 
+  async function submit() {
+    if (crawling || !input.trim()) return;
+    if (!selected.length) { setNotice("Select at least one profile first."); return; }
+    setNotice("");
+    const parsed = await fetch("/api/sc/companies/crawl", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: input }),
+    }).then((r) => r.json());
+    if (!parsed.companies?.length) { setNotice("No company names found — try e.g. Acme, Globex"); return; }
+    if (parsed.dropped?.length) setNotice(`Skipped: ${parsed.dropped.join(", ")}`);
+    setInput("");
+    await crawlList(parsed.companies);
+  }
+
+  async function uploadFile(file: File) {
+    if (crawling) return;
+    if (!selected.length) { setNotice("Select at least one profile first."); return; }
+    setNotice("");
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/sc/companies/upload", { method: "POST", body: form });
+      const parsed = await res.json();
+      if (!res.ok || !parsed.companies?.length) {
+        setNotice(parsed.error || "No company names found in that file.");
+        return;
+      }
+      const extra = parsed.dropped?.length ? ` Skipped: ${parsed.dropped.slice(0, 8).join(", ")}${parsed.dropped.length > 8 ? "…" : ""}` : "";
+      setNotice(`Loaded ${parsed.companies.length} companies from ${file.name} (${parsed.rowsSeen} rows).${extra}`);
+      await crawlList(parsed.companies);
+    } catch {
+      setNotice("Upload failed — check the file and try again.");
+    } finally {
+      if (aliveRef.current) setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function csvCell(v: unknown): string {
+    const s = String(v ?? "");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
+  function downloadReport() {
+    const rows: unknown[][] = [[
+      "Company", "Status", "Detail", "Provider", "Source URL",
+      "Jobs Fetched", "Jobs Kept", "Matched",
+      "Job Title", "Location", "Score", "Band", "Profiles", "Job URL",
+    ]];
+    for (const c of companies) {
+      const base = [c.name, c.phase, c.detail, c.provider || "", c.resolvedUrl || "",
+        c.fetched ?? "", c.accepted ?? "", c.totalMatched];
+      if (!c.results.length) {
+        rows.push([...base, "", "", "", "", "", ""]);
+      }
+      for (const a of c.results) {
+        const job = a.job || { title: a.jobId, company: "", location: "", url: "" };
+        const band = typeof a.best.band === "string" ? a.best.band : a.best.band?.label || "";
+        const profs = (a.matches || []).map((m) => `${names[m.profileId] || m.profileId}:${m.score}`).join("; ");
+        rows.push([...base, job.title, job.location || "", a.best.score, band, profs, job.url || ""]);
+      }
+    }
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+    const blob = new Blob([rows.map((r) => r.map(csvCell).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `target-companies-${stamp}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const settled = companies.length > 0 && companies.every((c) => c.phase === "done" || c.phase === "error");
+
   return (
     <div>
       <div className="flex items-end justify-between">
@@ -280,14 +347,29 @@ export function CompaniesView({ profiles }: { profiles: ProfileRef[] }) {
             placeholder='Try "Acme, Globex" — or "find jobs at Acme and Globex"'
             className="w-full bg-transparent text-sm text-foreground placeholder:text-faint focus:outline-none"
           />
-          <button onClick={submit} disabled={crawling || !input.trim()}
+          <button onClick={submit} disabled={crawling || uploading || !input.trim()}
             className="orchid-cta inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition disabled:opacity-50">
             {crawling ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
             {crawling ? `Crawling… ${elapsed}s` : "Crawl"}
           </button>
+          <button onClick={() => fileInputRef.current?.click()} disabled={crawling || uploading}
+            title="Upload an Excel file (.xlsx, .xls, .csv) — one company per row, first column, up to 100"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted transition hover:bg-surface-hover hover:text-foreground disabled:opacity-50">
+            {uploading ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}
+            {uploading ? "Reading…" : "Upload Excel"}
+          </button>
+          {settled && (
+            <button onClick={downloadReport}
+              title="Download every match as CSV"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted transition hover:bg-surface-hover hover:text-foreground">
+              <Download className="size-3.5" /> Report
+            </button>
+          )}
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); }} />
         </div>
         <div className="mt-2 text-xs text-muted">
-          Multiple companies at once — separate with commas.
+          Multiple companies at once — separate with commas, or upload an Excel file (first column = company names, up to 100).
         </div>
       </div>
 
